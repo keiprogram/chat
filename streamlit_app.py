@@ -26,8 +26,6 @@ if st.button("送信"):
         c.execute("INSERT INTO messages (user, message) VALUES (?, ?)", ('ユーザー', user_msg))
         conn.commit()
         st.success("メッセージが送信されました！")
-        # メッセージ送信後に入力フィールドをリセット
-        st.experimental_rerun()
 
 # メッセージの読み込み
 c.execute("SELECT user, message, timestamp FROM messages ORDER BY timestamp DESC")
@@ -37,4 +35,5 @@ messages = c.fetchall()
 for user, message, timestamp in messages:
     st.write(f"{user} ({timestamp}): {message}")
 
+# データベース接続を閉じる
 conn.close()
