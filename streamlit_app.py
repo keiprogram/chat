@@ -1,8 +1,7 @@
 import sqlite3
 import streamlit as st
 from datetime import datetime
-from streamlit.runtime.scriptrunner import add_script_run_ctx
-from streamlit_autorefresh import st_autorefresh
+import time
 
 # データベース接続関数
 def get_db_connection():
@@ -53,10 +52,25 @@ if user_msg:
         'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     })
 
+    # ページをリロードして新しいメッセージを反映
+    st.experimental_rerun()
+
 # チャットログの表示
 for chat in st.session_state.chat_log:
     st.write(f"{chat['user']} ({chat['timestamp']})")
     st.write(chat['message'])
 
-# 自動リフレッシュ (2秒ごとにページをリロード)
-st_autorefresh(interval=2000)  # 2000ミリ秒 = 2秒
+# 2秒ごとにメッセージを再読み込み
+if st.button('メッセージを更新'):
+    # データベースからメッセージを再取得
+    new_messages = load_messages()
+    st.session_state.chat_log = []
+    for message in new_messages:
+        st.session_state.chat_log.append({
+            'user': message['user'],
+            'message': message['message'],
+            'timestamp': message['timestamp']
+        })
+
+    # ページをリロードして更新
+    st.experimental_rerun()
