@@ -1,50 +1,57 @@
 import sqlite3
-
-# データベースに接続
-conn = sqlite3.connect('chat.db')
-c = conn.cursor()
-
-# テーブルの作成
-c.execute('''CREATE TABLE IF NOT EXISTS messages
-             (id INTEGER PRIMARY KEY AUTOINCREMENT, user TEXT, message TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
-
-conn.commit()
-conn.close()
 import streamlit as st
-import sqlite3
-import pandas as pd
+from datetime import datetime
 
-st.title("オープンチャットアプリ")
+# データベース接続関数
+def get_db_connection():
+    conn = sqlite3.connect('chat.db')
+    conn.row_factory = sqlite3.Row  # データを辞書形式で取得
+    return conn
 
-# チャットログを保存するセッションステート
+# メッセージをデータベースに保存
+def save_message(user, message):
+    with get_db_connection() as conn:
+        c = conn.cursor()
+        c.execute("INSERT INTO messages (user, message) VALUES (?, ?)", (user, message))
+        conn.commit()
+
+# メッセージをデータベースから読み込み
+def load_messages():
+    with get_db_connection() as conn:
+        c = conn.cursor()
+        c.execute("SELECT user, message, timestamp FROM messages ORDER BY timestamp DESC")
+        return c.fetchall()
+
+# チャットログをセッションにロード
 if 'chat_log' not in st.session_state:
     st.session_state.chat_log = []
+
+    # 初回読み込み時にデータベースからメッセージを取得
+    messages = load_messages()
+    for message in messages:
+        st.session_state.chat_log.append({
+            'user': message['user'],
+            'message': message['message'],
+            'timestamp': message['timestamp']
+        })
+
+st.title("オープンチャットアプリ")
 
 # ユーザーのメッセージ入力
 user_msg = st.chat_input("メッセージを入力してください")
 
 if user_msg:
     # メッセージをデータベースに保存
-    conn = sqlite3.connect('chat.db')
-    c = conn.cursor()
-    c.execute("INSERT INTO messages (user, message) VALUES (?, ?)", ('ユーザー', user_msg))
-    conn.commit()
-    conn.close()
+    save_message('ユーザー', user_msg)
 
     # チャットログに追加
-    st.session_state.chat_log.append({'user': 'ユーザー', 'message': user_msg})
+    st.session_state.chat_log.insert(0, {
+        'user': 'ユーザー',
+        'message': user_msg,
+        'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    })
 
 # チャットログの表示
 for chat in st.session_state.chat_log:
-    st.chat_message(chat['user'], chat['message'])
+    st.chat_message(f"{chat['user']} ({chat['timestamp']})", chat['message'])
 
-# メッセージの読み込み
-conn = sqlite3.connect('chat.db')
-c = conn.cursor()
-c.execute("SELECT user, message, timestamp FROM messages ORDER BY timestamp DESC")
-messages = c.fetchall()
-conn.close()
-
-# メッセージの表示
-for user, message, timestamp in messages:
-    st.chat_message(user, message, timestamp)
