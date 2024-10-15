@@ -51,7 +51,7 @@ if user_msg:
         'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     })
 
-# チャットログの表示
+# チャットログの表示 (st.writeを使ってメッセージを表示)
 for chat in st.session_state.chat_log:
-    st.chat_message(f"{chat['user']} ({chat['timestamp']})", chat['message'])
-
+    st.write(f"{chat['user']} ({chat['timestamp']})")
+    st.write(chat['message'])
