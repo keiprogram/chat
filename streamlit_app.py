@@ -25,16 +25,7 @@ def load_messages():
 
 # チャットログをセッションにロード
 if 'chat_log' not in st.session_state:
-    st.session_state.chat_log = []
-
-    # 初回読み込み時にデータベースからメッセージを取得
-    messages = load_messages()
-    for message in messages:
-        st.session_state.chat_log.append({
-            'user': message['user'],
-            'message': message['message'],
-            'timestamp': message['timestamp']
-        })
+    st.session_state.chat_log = load_messages()  # 初回メッセージをデータベースから取得
 
 st.title("オープンチャットアプリ")
 
@@ -45,7 +36,7 @@ if user_msg:
     # メッセージをデータベースに保存
     save_message('ユーザー', user_msg)
 
-    # チャットログに追加
+    # 新しいメッセージをチャットログに追加
     st.session_state.chat_log.insert(0, {
         'user': 'ユーザー',
         'message': user_msg,
@@ -60,10 +51,12 @@ for chat in st.session_state.chat_log:
     st.write(f"{chat['user']} ({chat['timestamp']})")
     st.write(chat['message'])
 
-# 2秒ごとにメッセージを再読み込み
+# 自動更新用のボタン
 if st.button('メッセージを更新'):
-    # データベースからメッセージを再取得
+    # データベースから新しいメッセージを再取得
     new_messages = load_messages()
+    
+    # 新しいメッセージをセッションステートに追加
     st.session_state.chat_log = []
     for message in new_messages:
         st.session_state.chat_log.append({
