@@ -1,7 +1,7 @@
 import sqlite3
 import streamlit as st
 from datetime import datetime
-import time
+from streamlit_autorefresh import st_autorefresh  # 追加
 
 # データベース接続関数
 def get_db_connection():
