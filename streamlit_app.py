@@ -1,7 +1,6 @@
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 import sqlite3
-import time
 
 # データベースに接続
 conn = sqlite3.connect('chat.db')
@@ -21,11 +20,14 @@ st_autorefresh(interval=3000)  # 3秒ごとにリフレッシュ
 # ユーザーのメッセージ入力
 user_msg = st.text_input("メッセージを入力してください")
 
-# メッセージ送信時の処理
-if user_msg:
-    c.execute("INSERT INTO messages (user, message) VALUES (?, ?)", ('ユーザー', user_msg))
-    conn.commit()
-    user_msg = ""  # メッセージ送信後に入力フィールドをリセット
+# 送信ボタンを追加
+if st.button("送信"):
+    if user_msg:  # メッセージが空でない場合のみ送信
+        c.execute("INSERT INTO messages (user, message) VALUES (?, ?)", ('ユーザー', user_msg))
+        conn.commit()
+        st.success("メッセージが送信されました！")
+        # メッセージ送信後に入力フィールドをリセット
+        st.experimental_rerun()
 
 # メッセージの読み込み
 c.execute("SELECT user, message, timestamp FROM messages ORDER BY timestamp DESC")
