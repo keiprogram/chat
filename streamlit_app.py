@@ -1,31 +1,50 @@
-# Streamlitライブラリをインポート
+import sqlite3
+
+# データベースに接続
+conn = sqlite3.connect('chat.db')
+c = conn.cursor()
+
+# テーブルの作成
+c.execute('''CREATE TABLE IF NOT EXISTS messages
+             (id INTEGER PRIMARY KEY AUTOINCREMENT, user TEXT, message TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
+
+conn.commit()
+conn.close()
 import streamlit as st
+import sqlite3
+import pandas as pd
 
-# ページ設定（タブに表示されるタイトル、表示幅）
-st.set_page_config(page_title="タイトル", layout="wide")
+st.title("オープンチャットアプリ")
 
-# タイトルを設定
-st.title('Streamlitのサンプルアプリ')
+# チャットログを保存するセッションステート
+if 'chat_log' not in st.session_state:
+    st.session_state.chat_log = []
 
-# テキスト入力ボックスを作成し、ユーザーからの入力を受け取る
-user_input = st.text_input('あなたの名前を入力してください')
+# ユーザーのメッセージ入力
+user_msg = st.chat_input("メッセージを入力してください")
 
-# ボタンを作成し、クリックされたらメッセージを表示
-if st.button('挨拶する'):
-    if user_input:  # 名前が入力されているかチェック
-        st.success(f'🌟 こんにちは、{user_input}さん! 🌟')  # メッセージをハイライト
-    else:
-        st.error('名前を入力してください。')  # エラーメッセージを表示
+if user_msg:
+    # メッセージをデータベースに保存
+    conn = sqlite3.connect('chat.db')
+    c = conn.cursor()
+    c.execute("INSERT INTO messages (user, message) VALUES (?, ?)", ('ユーザー', user_msg))
+    conn.commit()
+    conn.close()
 
-# スライダーを作成し、値を選択
-number = st.slider('好きな数字（10進数）を選んでください', 0, 100)
+    # チャットログに追加
+    st.session_state.chat_log.append({'user': 'ユーザー', 'message': user_msg})
 
-# 補足メッセージ
-st.caption("十字キー（左右）でも調整できます。")
+# チャットログの表示
+for chat in st.session_state.chat_log:
+    st.chat_message(chat['user'], chat['message'])
 
-# 選択した数字を表示
-st.write(f'あなたが選んだ数字は「{number}」です。')
+# メッセージの読み込み
+conn = sqlite3.connect('chat.db')
+c = conn.cursor()
+c.execute("SELECT user, message, timestamp FROM messages ORDER BY timestamp DESC")
+messages = c.fetchall()
+conn.close()
 
-# 選択した数値を2進数に変換
-binary_representation = bin(number)[2:]  # 'bin'関数で2進数に変換し、先頭の'0b'を取り除く
-st.info(f'🔢 10進数の「{number}」を2進数で表現すると「{binary_representation}」になります。 🔢')  # 2進数の表示をハイライト
+# メッセージの表示
+for user, message, timestamp in messages:
+    st.chat_message(user, message, timestamp)
